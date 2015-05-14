@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Awty</string>
+
+    <string name="tele">Recipient\'s number</string>
+    <string name="message">Enter message</string>
+    <string name="interval">Interval time</string>
+    <string name="button">Start</string>
+    <string name="action_settings">Settings</string>
+</resources>
