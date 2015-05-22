@@ -1,7 +1,10 @@
 package kar34.washington.edu.awty;
 
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
+import android.telephony.SmsManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.app.AlarmManager;
@@ -9,9 +12,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.view.View;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.*;
 
 
 public class MainActivity extends ActionBarActivity {
@@ -20,13 +21,25 @@ public class MainActivity extends ActionBarActivity {
     private String num;
     private String message;
     private String interval;
+    BroadcastReceiver br = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+
+            SmsManager sms = SmsManager.getDefault();
+            try {
+                sms.sendTextMessage(num, null, message, null, null);
+                Toast.makeText(context, "Message has been sent!", Toast.LENGTH_LONG).show();
+            } catch (Exception e) {
+                Toast.makeText(context, "Message not sent", Toast.LENGTH_LONG).show();
+                e.printStackTrace();
+            }
+        }
+    };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final Intent intent = new Intent(MainActivity.this, Receiver.class);
         final Button b = (Button) findViewById(R.id.button);
 
         b.setOnClickListener(new View.OnClickListener() {
@@ -44,6 +57,9 @@ public class MainActivity extends ActionBarActivity {
 
                 CharSequence buttonText = b.getText();
 
+                registerReceiver(br, new IntentFilter("go"));
+                AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+
                 if (buttonText.equals("Stop")) {
                     b.setText("Start");
                     stop();
@@ -55,20 +71,21 @@ public class MainActivity extends ActionBarActivity {
                     Toast.makeText(getApplicationContext(), "Please pick a value higher than 0", Toast.LENGTH_SHORT).show();
                 else if (buttonText.equals("Start")) {
                     b.setText("Stop");
-                    intent.putExtra("message", message);
-                    intent.putExtra("number", "(" + num.substring(0, 3) + ")" + num.substring(3, 6) + "-" + num.substring(6));
-                    pIntent = PendingIntent.getBroadcast(MainActivity.this, 0, intent, 0);
-                    start();
+                    start(am);
                 }
 
             }
         });
     }
 
-    public void start() {
-        AlarmManager manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        manager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), Integer.parseInt(interval) * 1000, pIntent);
-        Toast.makeText(this, "Interval has been set", Toast.LENGTH_SHORT).show();
+    public void start(AlarmManager am) {
+        Intent i = new Intent();
+        i.putExtra("number", num);
+        i.putExtra("message", message);
+        i.setAction("go");
+
+        pIntent = PendingIntent.getBroadcast(MainActivity.this, 0, i, 0);
+        am.setRepeating(AlarmManager.RTC, System.currentTimeMillis() + Integer.parseInt(interval) * 1000, Integer.parseInt(interval) * 1000, pIntent);
     }
 
     public void stop() {
